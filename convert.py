@@ -41,19 +41,36 @@ def calculate_color(image: Image.Image, args: argparse.Namespace):
     Returns the hex of most common color in monochrome if --monochrome is used.
     """
     
-    # getcolors takes maxcolors attributes with default value of 256
-    # if it is exceeded, the method returns None
-    # however, there can be up to width*height colors in an image
-    colors = image.getcolors(image.size[0] * image.size[1]);
+    total_pixels = image.size[0] * image.size[1]
+    # getcolors takes maxcolors attribute with default value of 256
+    # if the number is exceeded, the method returns None
+    # however, an image can have up to as many colors as it has pixels
+    colors = image.getcolors(total_pixels)
     
-    # after sorting, the first color is most common
-    sorted_colors = sorted(colors, key=lambda x: x[0])
-    (count, rgb) = sorted_colors[0]
+    if args.monochrome:
+        # monochrome only has one value for the color: the luminance
+        total = 0
+        for count, color in colors:
+            total += color * count
+        return rgb2hex(total, total, total)
 
-    # in case of monochrome images, there is only one value instead of three
-    if (args.monochrome):
-        return rgb2hex(rgb, rgb, rgb)
-    
+    if args.use_average_color:
+        # calculate average rgb
+        r,g,b = 0,0,0
+        for count, color in colors:
+            r += color[0] * count
+            g += color[1] * count
+            b += color[2] * count
+        r //= total_pixels
+        g //= total_pixels
+        b //= total_pixels
+        return rgb2hex(r, g, b)
+
+    # by default use most common color in the image
+    # sort by count in ascending order
+    sorted_colors = sorted(colors, key=lambda x: x[0])
+    # use last color (highest count)
+    (_, rgb) = sorted_colors[-1]
     return rgb2hex(*rgb)
 
 def convert(args):
@@ -83,6 +100,7 @@ def main():
     parser.add_argument("--fontsize", help="Letters' font-size; in px", type=int, default=24)
 
     parser.add_argument("--monochrome", help="Generate a black and white picture", action="store_true")
+    parser.add_argument("--use-average-color", help="Use average color of area instead of the most common.", action="store_true")
     args = parser.parse_args()
 
     convert(args)
