@@ -1,3 +1,4 @@
+from math import sqrt
 import argparse
 from PIL import Image
 from xml.etree import ElementTree as ET
@@ -55,16 +56,17 @@ def calculate_color(image: Image.Image, args: argparse.Namespace):
         return rgb2hex(total, total, total)
 
     if args.use_average_color:
-        # calculate average rgb
+        # calculate average rgb (the right way)
+        # https://sighack.com/post/averaging-rgb-colors-the-right-way
         r,g,b = 0,0,0
         for count, color in colors:
-            r += color[0] * count
-            g += color[1] * count
-            b += color[2] * count
-        r //= total_pixels
-        g //= total_pixels
-        b //= total_pixels
-        return rgb2hex(r, g, b)
+            r += (color[0] * color[0]) * count
+            g += (color[1] * color[1]) * count
+            b += (color[2] * color[2]) * count
+        r = int(sqrt(r / total_pixels))
+        g = int(sqrt(g / total_pixels))
+        b = int(sqrt(b / total_pixels))
+        return rgb2hex(r,g,b)
 
     # by default use most common color in the image
     # sort by count in ascending order
