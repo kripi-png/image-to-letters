@@ -1,0 +1,11 @@
+# dirs
+Lib/
+Scripts/
+
+pyvenv.cfg
+*.html
+
+# images
+*.png
+*.jpg
+*.jfif
