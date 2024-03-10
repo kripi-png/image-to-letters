@@ -1,3 +1,14 @@
+"""
+Author: Roope Sinisalo / Github/kripi-png
+Date: 10.3.2024
+
+
+TODO:
+- allow using both monochrome and average color options at the same time
+- option for set of characters used to generate the image
+  - by default something like ABCDabcd$€&/123 but can be changed to just "X" for example
+"""
+
 from math import sqrt
 import argparse
 from PIL import Image
@@ -53,6 +64,8 @@ def calculate_color(image: Image.Image, args: argparse.Namespace):
         total = 0
         for count, color in colors:
             total += color * count
+
+        total //= total_pixels
         return rgb2hex(total, total, total)
 
     if args.use_average_color:
