@@ -1,16 +1,26 @@
 import argparse
 from PIL import Image
+from xml.etree import ElementTree as ET
 
-def save_to_file(spans: list[str], columns: int):
+def save_to_file(spans: list[str], columns: int, args: argparse.Namespace):
     """Generate a HTML file"""
-    
-    with open('output.html', 'w') as file:
-        html_start = "<!DOCTYPE html><html><head><style>span { font-size: 24px; margin-top: -4px; } body { " + f"background: darkgrey; display: grid; grid-template-columns: repeat({columns}, 17px) " + "}</style></head><body>"
-        html_spans = "\n".join(spans)
-        html_end = "</body></html>"
-        file.write(html_start)
-        file.write(html_spans)
-        file.write(html_end)
+
+    html = ET.Element('html')
+    head = ET.Element('head')
+    body = ET.Element('body')
+    for span in spans:
+        body.append(ET.fromstring(span))
+   
+    style = ET.Element('style');
+    body_style = f"body {{ background: {args.color}; display: grid; grid-template-columns: repeat({columns}, {args.fontsize}px) }}"
+    span_style = f"span {{ font-size: {args.fontsize}px; }}"
+    style.text = body_style + "\n" + span_style
+
+    head.append(style)
+    html.append(head)
+    html.append(body)
+
+    ET.ElementTree(html).write("output.html", encoding="unicode", method="html")
         
 def rgb2hex(r: int, g: int, b: int) -> str:
     """Taken from https://stackoverflow.com/a/19917486"""
@@ -35,33 +45,34 @@ def calculate_color(image: Image.Image):
     
     return rgb2hex(*rgb)
 
-def convert(file_path: str, letter_size: int):
+def convert(args):
     """Convert file_path into letters, one for each letter_size area"""
 
-    with Image.open(file_path).convert() as im:
+    with Image.open(args.filename).convert() as im:
         (width, height) = im.size;
         
         tiles = []
-        for y in range(0, height, letter_size):
-            for x in range(0, width, letter_size):
-                tiles.append(crop(im, letter_size, x, y))
+        for y in range(0, height, args.size):
+            for x in range(0, width, args.size):
+                tiles.append(crop(im, args.size, x, y))
 
         html_spans = []
         for tile in tiles:
             hex = calculate_color(tile)
-            html_spans.append(f"<span style='color: {hex}'>X</span>")
+            html_spans.append(f"<span style='color: {hex};'>X</span>")
 
-        column_num = width // letter_size
-        save_to_file(html_spans, column_num)
+        column_num = width // args.size
+        save_to_file(html_spans, column_num, args)
     
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", help="path to image file to convert")
     parser.add_argument("-s", "--size", help="size of area for each letter", default=10, type=int)
+    parser.add_argument("-c", "--color", help="background color; hex or color name (css)", default="#262626")
+    parser.add_argument("--fontsize", help="Letters' font-size; in px", type=int, default=24)
     args = parser.parse_args()
-    
-    print(f'Starting to convert file {args.filename}')
-    convert(args.filename, args.size)
+
+    convert(args)
 
 if __name__ == '__main__':
     main()
