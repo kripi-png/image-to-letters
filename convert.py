@@ -4,9 +4,12 @@ Date: 10.3.2024
 
 
 TODO:
-- allow using both monochrome and average color options at the same time
 - option for set of characters used to generate the image
   - by default something like ABCDabcd$€&/123 but can be changed to just "X" for example
+- allow using both monochrome and average color options at the same time
+- do something about the styling part
+  - maybe allow loading css from file?
+- option to change output file name  / location
 """
 
 from math import sqrt, ceil
@@ -14,8 +17,8 @@ import argparse
 from PIL import Image
 from xml.etree import ElementTree as ET
 
-def save_to_file(spans: list[str], columns: int, args: argparse.Namespace):
-    """Generate a HTML file"""
+def generate_html_file(spans: list[str], columns: int, args: argparse.Namespace):
+    """Create <style>, <head>, and <body> and save them to output.html"""
 
     html = ET.Element('html')
     head = ET.Element('head')
@@ -106,7 +109,7 @@ def convert(args):
             html_spans.append(f"<span style='color: {hex};'>X</span>")
 
         column_num = width // args.size
-        save_to_file(html_spans, column_num, args)
+        generate_html_file(html_spans, column_num, args)
     
 def main():
     parser = argparse.ArgumentParser()
