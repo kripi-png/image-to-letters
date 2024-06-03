@@ -12,9 +12,9 @@ TODO:
 - option to change output file name  / location
 """
 
-from math import sqrt, ceil
 import argparse
 from PIL import Image
+from math import sqrt, ceil
 from xml.etree import ElementTree as ET
 
 def generate_html_file(spans: list[str], columns: int, args: argparse.Namespace):
