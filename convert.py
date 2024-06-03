@@ -99,6 +99,19 @@ def calculate_average_color(
     return (r, g, b)
 
 
+def calculate_common_color(
+    colors: Sequence[tuple[int, tuple[int, int, int]]]
+) -> tuple[int, int, int]:
+    """
+    Return the most common color in the list of colors based on pixel count.
+    """
+
+    # sort ascendingly based on count
+    sorted_colors = sorted(colors, key=lambda color: color[0])
+    # return last (most common) color's rgb tuple
+    return sorted_colors[-1][1]
+
+
 def calculate_color(image: Image.Image, args: argparse.Namespace):
     """
     Calculate the RGB values for the image or tile.
@@ -110,7 +123,10 @@ def calculate_color(image: Image.Image, args: argparse.Namespace):
     colors = get_area_colors(image)
     total_pixels = image.size[0] * image.size[1]
 
-    return calculate_average_color(colors, total_pixels)
+    if args.use_common:
+        return calculate_common_color(colors)
+    else:
+        return calculate_average_color(colors, total_pixels)
 
     # if args.use_monochrome:
     #     # monochrome only has one value for the color: the luminance
@@ -120,15 +136,6 @@ def calculate_color(image: Image.Image, args: argparse.Namespace):
 
     #     total //= total_pixels
     #     return (total, total, total)
-
-    # if args.use_common:
-    #     print("pre-sort", colors)
-    #     # sort by count in ascending order
-    #     sorted_colors = sorted(colors, key=lambda x: x[0])
-    #     print(sorted_colors)
-    #     # use last color (highest count)
-    #     (_, rgb) = sorted_colors[-1]
-    #     return (*rgb)
 
 
 def convert(args: argparse.Namespace):
