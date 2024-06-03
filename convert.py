@@ -2,6 +2,9 @@
 Author: Roope Sinisalo / Github/kripi-png
 Date: 10.3.2024
 
+Changelog:
+3.6.2024: Introduce pyright typing, make avg color the default
+
 
 TODO:
 - option for set of characters used to generate the image
@@ -11,6 +14,9 @@ TODO:
   - maybe allow loading css from file?
 - option to change output file name  / location
 - ensure defaults are displayed in --help
+- autocalculate suitable pixel size
+  - sometimes with certain image sizes the result is slanted
+    this usually gets fixed when the pixel size is adjusted to be multiplicative of the image size
 """
 
 import argparse
@@ -75,6 +81,24 @@ def get_area_colors(image: Image.Image):
     return colors
 
 
+def calculate_average_color(
+    colors: Sequence[tuple[int, tuple[int, int, int]]], total_pixels: int
+) -> tuple[int, int, int]:
+    """
+    Calculate the average of Red, Green, and Blue
+    https://sighack.com/post/averaging-rgb-colors-the-right-way
+    """
+    r, g, b = 0, 0, 0
+    for count, color in colors:
+        r += (color[0] * color[0]) * count
+        g += (color[1] * color[1]) * count
+        b += (color[2] * color[2]) * count
+    r = int(sqrt(r / total_pixels))
+    g = int(sqrt(g / total_pixels))
+    b = int(sqrt(b / total_pixels))
+    return (r, g, b)
+
+
 def calculate_color(image: Image.Image, args: argparse.Namespace):
     """
     Calculate the RGB values for the image or tile.
@@ -84,20 +108,9 @@ def calculate_color(image: Image.Image, args: argparse.Namespace):
     """
 
     colors = get_area_colors(image)
-
-    # calculate average rgb
-    # https://sighack.com/post/averaging-rgb-colors-the-right-way
-    r, g, b = 0, 0, 0
-    for count, color in colors:
-        r += (color[0] * color[0]) * count
-        g += (color[1] * color[1]) * count
-        b += (color[2] * color[2]) * count
-
     total_pixels = image.size[0] * image.size[1]
-    r = int(sqrt(r / total_pixels))
-    g = int(sqrt(g / total_pixels))
-    b = int(sqrt(b / total_pixels))
-    return (r, g, b)
+
+    return calculate_average_color(colors, total_pixels)
 
     # if args.use_monochrome:
     #     # monochrome only has one value for the color: the luminance
