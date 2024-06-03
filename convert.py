@@ -9,7 +9,7 @@ TODO:
   - by default something like ABCDabcd$€&/123 but can be changed to just "X" for example
 """
 
-from math import sqrt
+from math import sqrt, ceil
 import argparse
 from PIL import Image
 from xml.etree import ElementTree as ET
@@ -22,10 +22,11 @@ def save_to_file(spans: list[str], columns: int, args: argparse.Namespace):
     body = ET.Element('body')
     for span in spans:
         body.append(ET.fromstring(span))
-   
+
+    decreased_size = ceil(args.fontsize * 0.75); # 16 -> 12
     style = ET.Element('style');
-    body_style = f"body {{ background: {args.color}; display: grid; grid-template-columns: repeat({columns}, {args.fontsize}px); align-content: start; }}"
-    span_style = f"span {{ font-size: {args.fontsize}px; }}"
+    body_style = f"body {{ line-height: {decreased_size}px; background: {args.color}; display: grid; grid-template-columns: repeat({columns}, {decreased_size}px); align-content: start; }}"
+    span_style = f"span {{ font-size: {decreased_size}px; }}"
     style.text = body_style + "\n" + span_style
 
     head.append(style)
