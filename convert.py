@@ -9,7 +9,6 @@ Changelog:
 TODO:
 - option for set of characters used to generate the image
   - by default something like ABCDabcd$€&/123 but can be changed to just "X" for example
-- allow using both monochrome and average color options at the same time
 - do something about the styling part
   - maybe allow loading css from file?
 - option to change output file name  / location
@@ -63,21 +62,31 @@ def crop(image: Image.Image, size: int, x: int, y: int) -> Image.Image:
     return image.crop(box)
 
 
-def get_area_colors(image: Image.Image):
-    """get list of colors and their counts in an image / tile"""
+def get_area_colors(
+    image: Image.Image,
+) -> Sequence[tuple[int, tuple[int, int, int]]]:
+    """
+    For RGB images return a list of colors and their respective pixel count
+    For monochrome the three RGB values are the same
+    """
 
     # max colors is equal to total number of pixels
     max_colors = image.size[0] * image.size[1]
 
-    # for whatever reason .getcolors type annotation is list[tuple[int, int]]
-    # which conflicts with the *actual* type of list[tuple[int, tuple[int, int, int]]]
-    # hence there's some annoying workaround.
-    # I dont know if .getcolors as Any as Sequence ... would work?
+    # return type annoation of getcolors method is list[tuple[int, int]]
+    # when list[tuple[int, tuple[int, int, int]]] is also possible
     colors: Any | Sequence[tuple[int, tuple[int, int, int]]] = image.getcolors(
         max_colors
     )
     if not isinstance(colors, Sequence):
         raise Exception("Unexpected error: colors is not a list")
+
+    if image.mode == "L":
+        # in case of monochrome generate a new list of tuples with RGB values being the same
+        monochrome_list = []
+        for c in colors:
+            monochrome_list.append((c[0], (c[1], c[1], c[1])))
+        return monochrome_list
     return colors
 
 
@@ -112,7 +121,9 @@ def calculate_common_color(
     return sorted_colors[-1][1]
 
 
-def calculate_color(image: Image.Image, args: argparse.Namespace):
+def calculate_color(
+    image: Image.Image, args: argparse.Namespace
+) -> tuple[int, int, int]:
     """
     Calculate the RGB values for the image or tile.
     By default, returns the average RGB color in the area.
@@ -125,23 +136,14 @@ def calculate_color(image: Image.Image, args: argparse.Namespace):
 
     if args.use_common:
         return calculate_common_color(colors)
-    else:
-        return calculate_average_color(colors, total_pixels)
-
-    # if args.use_monochrome:
-    #     # monochrome only has one value for the color: the luminance
-    #     total = 0
-    #     for count, color in colors:
-    #         total += color * count
-
-    #     total //= total_pixels
-    #     return (total, total, total)
+    return calculate_average_color(colors, total_pixels)
 
 
 def convert(args: argparse.Namespace):
     """Convert file_path into letters, one for each letter_size area"""
 
-    with Image.open(args.filename).convert("RGB") as im:
+    mode = "L" if args.use_monochrome else "RGB"
+    with Image.open(args.filename).convert(mode) as im:
         (width, height) = im.size
 
         # split the image into args.size * args.size tiles
