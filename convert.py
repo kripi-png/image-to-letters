@@ -4,6 +4,7 @@ Date: 10.3.2024
 
 Changelog:
 3.6.2024: Introduce pyright typing, make avg color the default
+10.6.2024: Calculate suitable pixel size based on image width and height
 
 
 TODO:
@@ -13,13 +14,10 @@ TODO:
   - maybe allow loading css from file?
 - option to change output file name  / location
 - ensure defaults are displayed in --help
-- autocalculate suitable pixel size
-  - sometimes with certain image sizes the result is slanted
-    this usually gets fixed when the pixel size is adjusted to be multiplicative of the image size
 """
 
 import argparse
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 from PIL import Image
 from math import sqrt, ceil
 from xml.etree import ElementTree as ET
@@ -139,12 +137,63 @@ def calculate_color(
     return calculate_average_color(colors, total_pixels)
 
 
+# def is_whole(x: Union[int, float]) -> bool:
+#     """
+#     Return whether given number :x is whole number or decimal
+#     For example 1.0 is a whole number while 2.3 is not.
+#     """
+#     return (int(x) - x) == 0
+
+
+def common_divisors(a: int, b: int) -> list[int]:
+    """Return all numbers that can be used to divide both :a and :b without remainder"""
+    divisors = []
+    for i in range(1, min(a, b) + 1):
+        if a % i == 0 and b % i == 0:
+            divisors.append(i)
+
+    return divisors
+
+
+def find_divisor(width: int, height: int) -> int:
+    """Find a suitable dividor for given :width and :height"""
+
+    # select a reasonable starting tile size
+    start_size = int(width * 0.02)
+    divisors = common_divisors(width, height)
+
+    if start_size in divisors:
+        return start_size
+
+    divisors.append(start_size)
+    divisors = sorted(divisors)
+
+    start_index = divisors.index(start_size)
+    if start_index == 0:
+        return divisors[1]
+
+    if start_index == len(divisors) - 1:
+        return divisors[-2]
+
+    before, after = divisors[start_index - 1], divisors[start_index + 1]
+    delta_before = abs(before - start_size)
+    delta_after = abs(after - start_size)
+
+    if delta_before <= delta_after:
+        return before
+    return after
+
+
 def convert(args: argparse.Namespace):
     """Convert file_path into letters, one for each letter_size area"""
 
     mode = "L" if args.use_monochrome else "RGB"
     with Image.open(args.filename).convert(mode) as im:
         (width, height) = im.size
+
+        # calculate size if not given
+        if not args.size:
+            args.size = find_divisor(width, height)
 
         # split the image into args.size * args.size tiles
         # each tile will be converted to a single letter
@@ -167,12 +216,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", help="path to image file to convert")
     parser.add_argument(
-        "-s", "--size", help="size of area for each letter", default=10, type=int
+        "-s",
+        "--size",
+        help="Size of area for each letter. Default is calculated based on image width.",
+        type=int,
     )
     parser.add_argument(
         "-c",
         "--color",
-        help="background color; hex or color name (css)",
+        help="Background color; hex or color name (css)",
         default="#262626",
     )
     parser.add_argument(
