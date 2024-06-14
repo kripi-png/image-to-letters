@@ -1,11 +1,8 @@
-# dirs
-Lib/
-Scripts/
-
-pyvenv.cfg
+venv/
 *.html
 
 # images
+images/
 *.png
 *.jpg
 *.jfif
