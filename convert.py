@@ -145,6 +145,10 @@ def calculate_color(
 #     return (int(x) - x) == 0
 
 
+def is_common_divisor(x: int, a: int, b: int) -> bool:
+    return a % x == 0 and b % x == 0
+
+
 def common_divisors(a: int, b: int) -> list[int]:
     """Return all numbers that can be used to divide both :a and :b without remainder"""
     divisors = []
@@ -155,33 +159,31 @@ def common_divisors(a: int, b: int) -> list[int]:
     return divisors
 
 
-def find_divisor(width: int, height: int) -> int:
-    """Find a suitable dividor for given :width and :height"""
+def find_closest_common_divisor(x: int, a: int, b: int) -> int:
+    """Find a common divisor for :a and :b that is nearest to :x"""
+    divisors = common_divisors(a, b)
 
-    # select a reasonable starting tile size
-    start_size = int(width * 0.02)
-    divisors = common_divisors(width, height)
+    if x in divisors:
+        return x
 
-    if start_size in divisors:
-        return start_size
-
-    divisors.append(start_size)
+    divisors.append(x)
     divisors = sorted(divisors)
 
-    start_index = divisors.index(start_size)
-    if start_index == 0:
-        return divisors[1]
+    x_index = divisors.index(x)
 
-    if start_index == len(divisors) - 1:
+    # if given num is first or last return second or second last respectively
+    if x_index == 0:
+        return divisors[1]
+    if x_index == len(divisors) - 1:
         return divisors[-2]
 
-    before, after = divisors[start_index - 1], divisors[start_index + 1]
-    delta_before = abs(before - start_size)
-    delta_after = abs(after - start_size)
+    # figure out nearest number
+    d_prev = x - divisors[x_index - 1]
+    d_next = divisors[x_index + 1] - x
 
-    if delta_before <= delta_after:
-        return before
-    return after
+    if d_prev <= d_next:
+        return divisors[x_index - 1]
+    return divisors[x_index + 1]
 
 
 def convert(args: argparse.Namespace):
@@ -191,9 +193,17 @@ def convert(args: argparse.Namespace):
     with Image.open(args.filename).convert(mode) as im:
         (width, height) = im.size
 
+        # warn about slanted result
+        if args.size and not is_common_divisor(args.size, width, height):
+            divisors = common_divisors(width, height)
+            print(
+                f"[WARN]: {args.size} is not a common divisor of both the width and height, so the output may be slanted. Consider using one of these: {divisors}"
+            )
+
         # calculate size if not given
         if not args.size:
-            args.size = find_divisor(width, height)
+            start_size = int(width * 0.02)
+            args.size = find_closest_common_divisor(start_size, width, height)
 
         # split the image into args.size * args.size tiles
         # each tile will be converted to a single letter
