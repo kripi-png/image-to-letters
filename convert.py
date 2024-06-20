@@ -13,7 +13,6 @@ TODO:
 - do something about the styling part
   - maybe allow loading css from file?
 - option to change output file name  / location
-- ensure defaults are displayed in --help
 """
 
 import argparse
@@ -234,13 +233,14 @@ def main():
     parser.add_argument(
         "-c",
         "--color",
-        help="Background color; hex or color name (css)",
+        help="Background color; CSS-valid hex or color name. (Default #262626)",
         default="#262626",
     )
     parser.add_argument(
-        "--fontsize", help="Letters' font-size; in px", type=int, default=24
+        "--fontsize", help="Letters' font-size; in px (Default 24)", type=int, default=24
     )
 
+    # style flags
     parser.add_argument(
         "--use-monochrome",
         help="Generate a black and white picture",
