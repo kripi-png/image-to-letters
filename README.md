@@ -24,3 +24,5 @@ and using the average color of each tile for the respective character.
 #### Use most common color in tile instead of the average
 `convert.py image --use-common`
 
+#### Change used characters
+`convert.py image --charlist 1234567890`

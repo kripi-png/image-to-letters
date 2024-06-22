@@ -8,18 +8,18 @@ Changelog:
 
 
 TODO:
-- option for set of characters used to generate the image
-  - by default something like ABCDabcd$€&/123 but can be changed to just "X" for example
 - do something about the styling part
   - maybe allow loading css from file?
 - option to change output file name  / location
+- actual ASCII art mode
 """
 
 import argparse
-from typing import Any, Sequence, Union
+from typing import Any, Sequence
 from PIL import Image
 from math import sqrt, ceil
 from xml.etree import ElementTree as ET
+from random import choice
 
 
 def generate_html_file(spans: Sequence[str], columns: int, args: argparse.Namespace):
@@ -188,6 +188,9 @@ def find_closest_common_divisor(x: int, a: int, b: int) -> int:
 def convert(args: argparse.Namespace):
     """Convert file_path into letters, one for each letter_size area"""
 
+    if len(args.charlist) == 0:
+        raise Exception("Charlist cannot be an empty string")
+
     mode = "L" if args.use_monochrome else "RGB"
     with Image.open(args.filename).convert(mode) as im:
         (width, height) = im.size
@@ -215,7 +218,8 @@ def convert(args: argparse.Namespace):
         for tile in tiles:
             (r, g, b) = calculate_color(tile, args)
             hex = rgb2hex(r, g, b)
-            html_spans.append(f"<span style='color: {hex};'>X</span>")
+            char = choice(args.charlist)
+            html_spans.append(f"<span style='color: {hex};'>{char}</span>")
 
         column_num = width // args.size
         generate_html_file(html_spans, column_num, args)
@@ -237,7 +241,17 @@ def main():
         default="#262626",
     )
     parser.add_argument(
-        "--fontsize", help="Letters' font-size; in px (Default 24)", type=int, default=24
+        "--fontsize",
+        help="Letters' font-size; in px (Default 24)",
+        type=int,
+        default=24,
+    )
+
+    parser.add_argument(
+        "--charlist",
+        help="List of characters to be randomly used. (Default A-z0-9)",
+        type=str,
+        default="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#£¤$%/{}()[]=?+\\*~^-.:,;",
     )
 
     # style flags
