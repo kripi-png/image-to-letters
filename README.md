@@ -26,3 +26,6 @@ and using the average color of each tile for the respective character.
 
 #### Change used characters
 `convert.py image --charlist 1234567890`
+
+#### Change output file
+`convert.py image --output path/and/name.html`

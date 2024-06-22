@@ -10,7 +10,6 @@ Changelog:
 TODO:
 - do something about the styling part
   - maybe allow loading css from file?
-- option to change output file name  / location
 - actual ASCII art mode
 """
 
@@ -42,7 +41,7 @@ def generate_html_file(spans: Sequence[str], columns: int, args: argparse.Namesp
     html.append(head)
     html.append(body)
 
-    ET.ElementTree(html).write("output.html", encoding="unicode", method="html")
+    ET.ElementTree(html).write(args.output, encoding="unicode", method="html")
 
 
 def rgb2hex(r: int, g: int, b: int) -> str:
@@ -252,6 +251,14 @@ def main():
         help="List of characters to be randomly used. (Default A-z0-9)",
         type=str,
         default="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#£¤$%/{}()[]=?+\\*~^-.:,;",
+    )
+
+    parser.add_argument(
+        "-o",
+        "--output",
+        help="file path for output file. (Default ./output.html)",
+        type=str,
+        default="./output.html",
     )
 
     # style flags
