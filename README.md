@@ -24,6 +24,9 @@ and using the average color of each tile for the respective character.
 #### Use most common color in tile instead of the average
 `convert.py image --use-common`
 
+#### Generate traditional ASCII art
+`convert.py image --use-ascii`
+
 #### Change used characters
 `convert.py image --charlist 1234567890`
 

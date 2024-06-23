@@ -1,16 +1,12 @@
 """
-Author: Roope Sinisalo / Github/kripi-png
+Author: Roope Sinisalo / kripi-png
 Date: 10.3.2024
-
-Changelog:
-3.6.2024: Introduce pyright typing, make avg color the default
-10.6.2024: Calculate suitable pixel size based on image width and height
-
 
 TODO:
 - do something about the styling part
   - maybe allow loading css from file?
-- actual ASCII art mode
+
+- write some tests for the functions?
 """
 
 import argparse
@@ -20,9 +16,56 @@ from math import sqrt, ceil
 from xml.etree import ElementTree as ET
 from random import choice
 
+# the darkness is not linear and thus the closest value must be calculated for accuracy
+# big thanks to this answer for the charset and darkness values:
+# https://stackoverflow.com/a/74186686
+# fmt: off
+ASCII_CHARSET = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@"
+CHAR_DARKNESS = [0,0.0751,0.0829,0.0848,0.1227,0.1403,0.1559,0.185,0.2183,0.2417,0.2571,0.2852,0.2902,0.2919,0.3099,0.3192,0.3232,0.3294,0.3384,0.3609,0.3619,0.3667,0.3737,0.3747,0.3838,0.3921,0.396,0.3984,0.3993,0.4075,0.4091,0.4101,0.42,0.423,0.4247,0.4274,0.4293,0.4328,0.4382,0.4385,0.442,0.4473,0.4477,0.4503,0.4562,0.458,0.461,0.4638,0.4667,0.4686,0.4693,0.4703,0.4833,0.4881,0.4944,0.4953,0.4992,0.5509,0.5567,0.5569,0.5591,0.5602,0.5602,0.565,0.5776,0.5777,0.5818,0.587,0.5972,0.5999,0.6043,0.6049,0.6093,0.6099,0.6465,0.6561,0.6595,0.6631,0.6714,0.6759,0.6809,0.6816,0.6925,0.7039,0.7086,0.7235,0.7302,0.7332,0.7602,0.7834,0.8037,0.9999]
+# fmt: on
+
+
+def find_closest_value(val: int | float, list: Sequence[int | float]) -> int | float:
+    """
+    Recursively find the closest value to :val in :list.
+
+    Find the middle value in the list, and compare it to given value.
+    If the value is lower or equal to the middle value, repeat for the
+    first half of the list, otherwise for the second.
+    If the list only contains a single value, return the value.
+    """
+
+    l = len(list)
+    if l == 1:
+        return list[0]
+
+    middle_i = l // 2
+    if val <= list[middle_i]:
+        return find_closest_value(val, list[:middle_i])
+    else:
+        return find_closest_value(val, list[middle_i:])
+
+
+def find_char_by_darkness(darkness: float) -> str:
+    closest_darkness = find_closest_value(darkness, CHAR_DARKNESS)
+    darkness_index = CHAR_DARKNESS.index(closest_darkness)
+    return ASCII_CHARSET[darkness_index]
+
+
+def escape_html(char: str) -> str:
+    if char == '"':
+        return "&quot;"
+    if char == "&":
+        return "&amp;"
+    if char == "<":
+        return "&lt;"
+    if char == ">":
+        return "&gt;"
+    return char
+
 
 def generate_html_file(spans: Sequence[str], columns: int, args: argparse.Namespace):
-    """Create <style>, <head>, and <body> and save them to output.html"""
+    """Create <style>, <head>, and <body> and save them to args.output (default output.html)"""
 
     html = ET.Element("html")
     head = ET.Element("head")
@@ -214,11 +257,24 @@ def convert(args: argparse.Namespace):
                 tiles.append(crop(im, args.size, x, y))
 
         html_spans = []
-        for tile in tiles:
-            (r, g, b) = calculate_color(tile, args)
-            hex = rgb2hex(r, g, b)
-            char = choice(args.charlist)
-            html_spans.append(f"<span style='color: {hex};'>{char}</span>")
+        # normal image-to-letters
+        if not args.use_ascii:
+            for tile in tiles:
+                (r, g, b) = calculate_color(tile, args)
+                hex = rgb2hex(r, g, b)
+                char = choice(args.charlist)
+                html_spans.append(
+                    f"<span style='color: {hex};'>{escape_html(char)}</span>"
+                )
+        # ascii
+        else:
+            for tile in tiles:
+                (val, _, _) = calculate_color(tile, args)
+                char = find_char_by_darkness(val / 255)
+                # ASCII_CHARSET[int(val / 255 * len(ASCII_CHARSET) - 1)]
+                html_spans.append(
+                    f"<span style='color: #fff'>{escape_html(char)}</span>"
+                )
 
         column_num = width // args.size
         generate_html_file(html_spans, column_num, args)
@@ -272,7 +328,14 @@ def main():
         help="Use the most common color in an area instead of the calculated average.",
         action="store_true",
     )
+    parser.add_argument(
+        "--use-ascii", help="Generate traditional ASCII art image.", action="store_true"
+    )
     args = parser.parse_args()
+
+    # conversion to black/white is required
+    if args.use_ascii:
+        args.use_monochrome = True
 
     convert(args)
 
