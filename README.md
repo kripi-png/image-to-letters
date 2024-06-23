@@ -4,6 +4,8 @@
 Convert an image into letters by splitting it into tiles of certain size,
 and using the average color of each tile for the respective character.
 
+A few examples: https://imgur.com/a/d5Bfz23
+
 ## Installation
 
 1. Clone repo
